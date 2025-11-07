@@ -1,65 +1,34 @@
 import React, { useState } from 'react';
 import { CartItem, Address } from '../types';
 import { CloseIcon, MinusIcon, PlusIcon, CheckCircleIcon, ExclamationIcon } from './icons';
+import AddressForm from './AddressForm';
 
 interface CartViewProps {
   cart: CartItem[];
   totalPrice: number;
   onClose: () => void;
   onUpdateQuantity: (productId: number, quantity: number) => void;
-  onConfirmOrder: (address: Address) => Promise<void>;
+  onConfirmOrder: (order: { cart: CartItem[], address: Address, total: number }) => Promise<void>;
   orderStatus: 'idle' | 'placing' | 'success' | 'error';
   errorMessage: string;
   onPlaceAnotherOrder: () => void;
+  order: { cart: CartItem[], address: Address, total: number };
+  orderId: string;
 }
 
-const AddressForm: React.FC<{ address: Address; setAddress: (address: Address) => void; isFormValid: boolean; }> = ({ address, setAddress, isFormValid }) => {
-    const towers = Array.from({ length: 18 }, (_, i) => i + 1);
-    const floors = Array.from({ length: 14 }, (_, i) => i + 1);
-    const flats = Array.from({ length: 6 }, (_, i) => (i + 1).toString().padStart(3, '0'));
 
-    return (
-        <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Delivery Address</h3>
-            <div>
-                <label htmlFor="tower" className="block text-sm font-medium text-gray-700">Tower</label>
-                <select id="tower" value={address.tower} onChange={e => setAddress({ ...address, tower: e.target.value })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md">
-                    <option value="">Select Tower</option>
-                    {towers.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-            </div>
-            <div>
-                <label htmlFor="floor" className="block text-sm font-medium text-gray-700">Floor</label>
-                <select id="floor" value={address.floor} onChange={e => setAddress({ ...address, floor: e.target.value })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md">
-                    <option value="">Select Floor</option>
-                    {floors.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-            </div>
-            <div>
-                <label htmlFor="flat" className="block text-sm font-medium text-gray-700">Flat</label>
-                <select id="flat" value={address.flat} onChange={e => setAddress({ ...address, flat: e.target.value })} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm rounded-md">
-                    <option value="">Select Flat</option>
-                    {flats.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-            </div>
-             {!isFormValid && <p className="text-red-500 text-xs mt-1">Please fill out all address fields.</p>}
-        </div>
-    );
-};
-
-
-const CartView: React.FC<CartViewProps> = ({ cart, totalPrice, onClose, onUpdateQuantity, onConfirmOrder, orderStatus, errorMessage, onPlaceAnotherOrder }) => {
-  const [address, setAddress] = useState<Address>({ tower: '', floor: '', flat: '' });
+const CartView: React.FC<CartViewProps> = ({ cart, totalPrice, onClose, onUpdateQuantity, onConfirmOrder, orderStatus, errorMessage, onPlaceAnotherOrder, order, orderId }) => {
+  const [address, setAddress] = useState<Address>({ tower: '', floor: '', appartment: '' });
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // FIX: Coerce the result to a boolean. The original expression resulted in a string,
   // which caused a type error when passed to props expecting a boolean.
-  const isFormValid = !!(address.tower && address.floor && address.flat);
+  const isFormValid = !!(address.tower && address.floor && address.appartment);
 
   const handleSubmit = () => {
     setAttemptedSubmit(true);
     if(isFormValid) {
-        onConfirmOrder(address);
+        onConfirmOrder({ cart, address, total: totalPrice });
     }
   };
 
@@ -71,6 +40,9 @@ const CartView: React.FC<CartViewProps> = ({ cart, totalPrice, onClose, onUpdate
             <CheckCircleIcon className="w-16 h-16 text-green-500 mb-4"/>
             <h2 className="text-2xl font-bold text-gray-800">Order Placed!</h2>
             <p className="text-gray-600 mt-2">Your delicious meal is on its way. Thank you!</p>
+            <div className="mt-4 text-sm text-gray-500">
+              <p>Order ID: <span className="font-semibold text-gray-700">{orderId}</span></p>
+            </div>
             <button
               onClick={onPlaceAnotherOrder}
               className="mt-8 w-full bg-orange-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-orange-700 transition-colors"

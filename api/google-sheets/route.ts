@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as jose from 'jose';
-import type { CartItem, Address } from '../types';
+import type { CartItem, Address } from '../../types';
 
 // These values are securely read from Vercel Environment Variables
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
@@ -49,6 +49,7 @@ async function getAccessToken(): Promise<string> {
  * The main serverless function handler for submitting an order.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('handler called');
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
@@ -70,10 +71,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=USER_ENTERED`;
     
     const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-    const fullAddress = `Tower ${address.tower}, Floor ${address.floor}, Flat ${address.flat}`;
+    const fullAddress = `Tower ${address.tower}, Floor ${address.floor}, Appartment ${address.appartment}`;
     const itemsString = cart.map(item => `${item.name} (x${item.quantity})`).join(', ');
+    const orderId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    const values = [[timestamp, fullAddress, itemsString, total]];
+    const values = [[timestamp, orderId, fullAddress, itemsString, total]];
     
     const sheetsResponse = await fetch(url, {
       method: 'POST',
@@ -91,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(data.error?.message || 'Failed to write to Google Sheet.');
     }
 
-    return res.status(200).json({ message: 'Order submitted successfully!' });
+    return res.status(200).json({ message: 'Order submitted successfully!', orderId });
 
   } catch (error: any) {
     console.error('Error in serverless function:', error);
