@@ -13,5 +13,5 @@ export interface CartItem extends Product {
 export interface Address {
   tower: string;
   floor: string;
-  flat: string;
+  appartment: string;
 }

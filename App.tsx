@@ -13,6 +13,8 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [orderStatus, setOrderStatus] = useState<'idle' | 'placing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [order, setOrder] = useState<{ cart: CartItem[], address: Address, total: number } | null>(null);
+  const [orderId, setOrderId] = useState<string>('');
 
   const handleAddToCart = (product: Product) => {
     setCart(prevCart => {
@@ -49,10 +51,12 @@ const App: React.FC = () => {
     );
   }, [cart]);
 
-  const handleConfirmOrder = async (address: Address) => {
+  const handleConfirmOrder = async (order: { cart: CartItem[], address: Address, total: number }) => {
     setOrderStatus('placing');
     try {
-      await appendOrder(cart, address, totalPrice);
+      const newOrderId = await appendOrder(order.cart, order.address, order.total);
+      setOrder(order);
+      setOrderId(newOrderId);
       setOrderStatus('success');
     } catch (error) {
       console.error('Order submission failed:', error);
@@ -66,6 +70,8 @@ const App: React.FC = () => {
     setIsCartOpen(false);
     setOrderStatus('idle');
     setErrorMessage('');
+    setOrder(null);
+    setOrderId('');
   };
 
   return (
@@ -99,6 +105,8 @@ const App: React.FC = () => {
             orderStatus={orderStatus}
             errorMessage={errorMessage}
             onPlaceAnotherOrder={handlePlaceAnotherOrder}
+            order={order}
+            orderId={orderId}
           />
         )}
       </div>
